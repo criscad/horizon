@@ -1,0 +1,16 @@
+{% extends "horizon/common/_modal_form.html" %}
+{% load i18n %}
+{% load url from future %}
+
+{% block form_id %}action_details_form{% endblock %}
+{% block form_action %}{% url 'horizon:admin:sla:actiondetails' %}{% endblock %}
+
+{% block modal-header %}{% trans "SLA Action Details" %}{% endblock %}
+
+{% block modal-body %}
+
+{% endblock %}
+
+{% block modal-footer %}
+  <a href="{% url 'horizon:admin:sla:index' %}" class="btn secondary cancel close">{% trans "OK" %}</a>
+{% endblock %}
