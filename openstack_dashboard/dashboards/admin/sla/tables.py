@@ -18,9 +18,9 @@ from horizon import tables
 from horizon.utils import filters as utils_filters
 
 from openstack_dashboard import api
-
-
-
+from openstack_dashboard.dashboards.project.instances \
+    import tables as project_tables
+    
 #class NovaServiceFilterAction(tables.FilterAction):
 #    def fi
 #       def comp(service):
@@ -94,14 +94,14 @@ class HealingActionsTable(tables.DataTable):
         multi_select = True
 
 class VMResourcesTable(tables.DataTable):
-    ip = tables.Column("ip", verbose_name=_('VM IP'))
-    vm = tables.Column('vm', verbose_name=_('VM Name'))
-    project = tables.Column("project", verbose_name=_('Project'))
-    host = tables.Column('host', verbose_name=_('Host Name'))
+    ip = tables.Column(project_tables.get_ips, verbose_name=_('VM IP'))
+    vm = tables.Column('name', verbose_name=_('VM Name'))
+    project = tables.Column("tenant_name", verbose_name=_('Project'))
+    host = tables.Column('OS-EXT-SRV-ATTR:host', verbose_name=_('Host Name'))
     status = tables.Column('status', verbose_name=_('VM Status'))
 
     def get_object_id(self, obj):
-        return "%s" % (obj.ip)
+        return "%s" % (obj.id)
 
     class Meta:
         name = "vm_resources"
@@ -110,14 +110,14 @@ class VMResourcesTable(tables.DataTable):
 
 
 class HostResourcesTable(tables.DataTable):
-    ip = tables.Column("ip", verbose_name=_('Host IP'))
-    host = tables.Column('host', verbose_name=_('Host Name'))
-    loaded = tables.Column('loaded', verbose_name=_('Loaded'))
+    ip = tables.Column("host_ip", verbose_name=_('Host IP'))
+    host = tables.Column('hypervisor_hostname', verbose_name=_('Host Name'))
+    loaded = tables.Column('_loaded', verbose_name=_('Loaded'))
     running_vms = tables.Column('running_vms', verbose_name=_('# Running VMs'))
-    compute_service_status = tables.Column('compute_service_status', verbose_name=_('Compute Service Status'))
+    compute_service_status = tables.Column('state', verbose_name=_('Compute Service Status'))
 
     def get_object_id(self, obj):
-        return "%s" % (obj.ip)
+        return "%s" % (obj.id)
 
     class Meta:
         name = "host_resources"
