@@ -1,3 +1,5 @@
+# vim: tabstop=4 shiftwidth=4 softtabstop=4
+#
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
@@ -117,7 +119,7 @@ class Resource(base.APIResourceWrapper):
     def __init__(self, apiresource, ceilometer_usage=None):
         super(Resource, self).__init__(apiresource)
 
-        # Save empty strings to IDs rather than None, so it gets
+        # Save empty strings to IDs rather then None, sop it gets
         # serialized correctly. We don't want 'None' strings.
         self.project_id = self.project_id or ""
         self.user_id = self.user_id or ""
@@ -126,9 +128,6 @@ class Resource(base.APIResourceWrapper):
         self._id = "%s__%s__%s" % (self.project_id,
                                    self.user_id,
                                    self.resource_id)
-
-        # Meters with statistics data
-        self._meters = {}
 
         # TODO(lsmola) make parallel obtaining of tenant and user
         # make the threading here, thread join into resource_list
@@ -172,16 +171,6 @@ class Resource(base.APIResourceWrapper):
     def query(self):
         return self._query
 
-    @property
-    def meters(self):
-        return self._meters
-
-    def get_meter(self, meter_name):
-        return self._meters.get(meter_name, None)
-
-    def set_meter(self, meter_name, value):
-        self._meters[meter_name] = value
-
 
 class ResourceAggregate(Resource):
     """Represents aggregate of more resources together.
@@ -207,9 +196,6 @@ class ResourceAggregate(Resource):
         self.tenant_id = None
         self.user_id = None
         self.resource_id = None
-
-        # Meters with statistics data
-        self._meters = {}
 
         if query:
             self._query = query
@@ -238,6 +224,42 @@ class ResourceAggregate(Resource):
     @property
     def id(self):
         return self._id
+
+class Alarm(base.APIResourceWrapper):
+    """ Represents one Ceilometer alarm.
+    """
+
+    _attrs = ['alarm_actions', 'alarm_id', 'comparison_operator',
+              'description', 'enabled', 'evaluation_periods',
+              'insufficient_data_actions', 'matching_metadata',
+              'meter_name', 'name', 'ok_actions', 'period',
+              'project_id', 'repeat_actions', 'state', 'state_timestamp',
+              'statistic', 'threshold', 'timestamp', 'user_id']
+
+    def __init__(self, apiresource, ceilometer_usage=None):
+        super(Alarm, self).__init__(apiresource)
+
+        if ceilometer_usage and self.project_id:
+            self._tenant = ceilometer_usage.get_tenant(self.project_id)
+        else:
+            self._tenant = None
+
+        if ceilometer_usage and self.user_id:
+            self._user = ceilometer_usage.get_user(self.user_id)
+        else:
+            self._user = None
+
+    @property
+    def id(self):
+        return self.alarm_id
+
+    @property
+    def tenant(self):
+        return self._tenant
+
+    @property
+    def user(self):
+        return self._user
 
 
 class Sample(base.APIResourceWrapper):
@@ -307,6 +329,39 @@ def statistic_list(request, meter_name, query=None, period=None):
     statistics = ceilometerclient(request).\
         statistics.list(meter_name=meter_name, q=query, period=period)
     return [Statistic(s) for s in statistics]
+
+def alarm_list(request, query=None, ceilometer_usage=None):
+    """List of alarms."""
+    alarms = ceilometerclient(request).\
+        alarms.list(q=query)
+    return [Alarm(alarm, ceilometer_usage) for alarm in alarms]
+
+
+def alarm_get(request, alarm_id, ceilometer_usage=None):
+    """Get an alarm."""
+    alarm = ceilometerclient(request).\
+        alarms.get(alarm_id)
+    return Alarm(alarm, ceilometer_usage)
+
+
+def alarm_create(request, ceilometer_usage=None, **kwargs):
+    """Create an alarm."""
+    alarm = ceilometerclient(request).\
+        alarms.create(**kwargs)
+    return Alarm(alarm, ceilometer_usage)
+
+
+def alarm_update(request, alarm_id, ceilometer_usage=None, **kwargs):
+    """Update an alarm."""
+    alarm = ceilometerclient(request).\
+        alarms.update(alarm_id, **kwargs)
+    return Alarm(alarm, ceilometer_usage)
+
+
+def alarm_delete(request, alarm_id):
+    """Delete an alarm."""
+    ceilometerclient(request).\
+        alarms.delete(alarm_id)
 
 
 class ThreadedUpdateResourceWithStatistics(threading.Thread):
@@ -579,14 +634,13 @@ class CeilometerUsage(object):
             if statistics:
                 if stats_attr:
                     # I want to load only a specific attribute
-                    resource.set_meter(
-                        meter,
-                        getattr(statistics[0], stats_attr, None))
+                    setattr(resource, meter,
+                            getattr(statistics[0], stats_attr, None))
                 else:
                     # I want a dictionary of all statistics
-                    resource.set_meter(meter, statistics)
+                    setattr(resource, meter, statistics)
             else:
-                resource.set_meter(meter, None)
+                setattr(resource, meter, None)
 
         return resource
 
@@ -715,7 +769,7 @@ class Meters(object):
     It is listing meters defined in this class that are available
     in Ceilometer meter_list.
 
-    It is storing information that is not available in Ceilometer, i.e.
+    It is storing information that are not available in Ceiloemter, i.e.
     label, description.
 
     """
@@ -1077,7 +1131,7 @@ class Meters(object):
         return datastructures.SortedDict([
             ('image', {
                 'label': '',
-                'description': _("Image existence check"),
+                'description': _("Image polling -> it (still) exists"),
             }),
             ('image.size', {
                 'label': '',
@@ -1118,7 +1172,7 @@ class Meters(object):
         return datastructures.SortedDict([
             ('volume', {
                 'label': '',
-                'description': _("Duration of volume"),
+                'description': _("Duration of volune"),
             }),
             ('volume.size', {
                 'label': '',

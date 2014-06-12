@@ -21,19 +21,17 @@
 import logging
 
 from django.forms import ValidationError  # noqa
-from django import http
 from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.debug import sensitive_variables  # noqa
 
 from horizon import exceptions
 from horizon import forms
-from horizon import messages
-from horizon.utils import validators
+from django.forms import widgets
+from django.core import urlresolvers
 
-from openstack_dashboard.dashboards.admin.sla import tables
 
 from openstack_dashboard import api
-
+from openstack_dashboard.openstack.common import jsonutils
 
 LOG = logging.getLogger(__name__)
 
@@ -72,7 +70,27 @@ class BaseActionForm(forms.SelfHandlingForm):
 
 
 ADD_PROJECT_URL = "horizon:admin:projects:create"
+ADD_ALARM_URL = "horizon:admin:alarms:create"
 
+
+class DynamicSelectWidget(widgets.Select):
+    """A subclass of the ``Select`` widget which renders extra attributes for use in callbacks to handle dynamic changes to the available choices. """
+    _data_add_url_attr = "data-add-item-url"
+
+    def render(self, *args, **kwargs):
+        add_item_url = self.get_add_item_url()
+        if add_item_url is not None:
+            self.attrs.update({self._data_add_url_attr: add_item_url})
+            return super(DynamicSelectWidget, self).render(*args, **kwargs)
+    def get_add_item_url(self):
+        if callable(self.add_item_link):
+            return self.add_item_link()
+        try:
+            if self.add_item_link_args:
+                return urlresolvers.reverse(self.add_item_link, args=self.add_item_link_args)
+            else: return urlresolvers.reverse(self.add_item_link)
+        except urlresolvers.NoReverseMatch:
+            return self.add_item_link
 
 class CreateHealingActionForm(BaseActionForm):
     # Hide the domain_id and domain_name by default
@@ -89,7 +107,20 @@ class CreateHealingActionForm(BaseActionForm):
     condition = forms.ChoiceField(label=_("Condition"),
                                   widget=forms.Select(attrs={
                                     'class': 'switchable',
-                                    'data-slug': 'anaction'}))
+                                    'data-slug': 'anaction'
+                                  })
+                                  )
+
+    alarm = forms.DynamicChoiceField(label=_("Ceilometer Alarms"),
+                                  required=False,
+                                  initial='',
+        widget=DynamicSelectWidget(attrs={
+            'class': 'switched',
+            'data-switch-on': 'anaction',
+            'data-anaction-ceilometer_external_resource': _("Ceilometer Alarms"),
+        }),
+        add_item_link=ADD_ALARM_URL
+        )
 
     host_down_configuration = forms.CharField(label=_("Host Down configuration"),
                                required=False,
@@ -102,15 +133,17 @@ class CreateHealingActionForm(BaseActionForm):
         })
         )
 
-    period = forms.ChoiceField(label=_("Period (seconds)"),
-                               required=False,
-                               initial='60',
+    resource = forms.ChoiceField(label=_("Resource"),
+                                 initial='',
+                                 required=False,
         widget=forms.Select(attrs={
             'class': 'switched',
             'data-switch-on': 'anaction',
-            'data-anaction-vm_down': _("Period (seconds)"),
-            'data-anaction-services_down': _("Period (seconds)")
-        }))
+            'data-anaction-resource': _("Resource"),
+            'data-anaction-ceilometer_external_resource': _("Resource"),
+            'data-anaction-generic_script_alarm': _("Resource")
+        })
+        )
 
     action = forms.ChoiceField(label=_("Action"))
 
@@ -120,16 +153,20 @@ class CreateHealingActionForm(BaseActionForm):
         roles = kwargs.pop('roles')
         super(CreateHealingActionForm, self).__init__(*args, **kwargs)
 
-        #instance_id = kwargs.get('initial', {}).get('instance_id')
-        #self.fields['instance_id'].initial = instance_id
-        condition_choices = [('host_down', 'Host Down'), ('vm_down', 'VM Down'), ('services_down', 'OS Services Down')]
+        condition_choices = [('host_down', 'Host Down'), ('resource', 'Resource: Storage > 90%'), ('ceilometer_external_resource', 'Ceilometer Alarm'), ('generic_script_alarm', 'External Alarm')]
         self.fields['condition'].choices = condition_choices
-        #TODO call api for action, called handlerlist
-        action_choices = [('evacuate', 'Evacuate all Host VMs'), ('reboot', 'Restart All VMs'), ('migrate', 'Migrate All VMs')]
+
+        actions = api.self_healing.get_available_actions()
+        action_choices = [] #[('evacuate', 'Evacuate all Host VMs'), ('reboot', 'Restart All VMs'), ('migrate', 'Migrate All VMs')]
+        for x in actions:
+            action_choices.append((x.name,x.description))
         self.fields['action'].choices = action_choices
-        period_choices = [('60', '60'), ('120', '120')]
-        self.fields['period'].choices = period_choices
-        #self.fields['evacuate_notes'].TextInput = 'lalala'
+
+        resources_choices = self._get_vm_resources()
+        self.fields['resource'].choices = resources_choices
+
+        alarm_choices = self._get_alarms()
+        self.fields['alarm'].choices = alarm_choices
 
         # For keystone V3, display the two fields in read-only
         if api.keystone.VERSIONS.active >= 3:
@@ -137,6 +174,26 @@ class CreateHealingActionForm(BaseActionForm):
             self.fields["domain_id"].widget = readonlyInput
             self.fields["domain_name"].widget = readonlyInput
 
+    def _get_vm_resources(self):
+            servers = api.nova.server_list(self.request,all_tenants=True)
+            vm_resources = [('','Select a resource')]
+            if servers and servers[0]:
+                r = range(0, servers[0].__len__(), 1)
+                for i in r:
+                    vm_resources.append((servers[0][i]._apiresource.id,servers[0][i]._apiresource.human_id))
+            return vm_resources
+
+    def _get_alarms(self):
+            al = api.ceilometer.alarm_list(self.request)
+            alarms_choices = [('','Select an alarm')]
+            if al:
+                r = range(0, al.__len__(), 1)
+                for i in r:
+                    name = al[i]._apiresource.human_id
+                    if name == None:
+                        name = al[i]._apiresource.alarm_id
+                    alarms_choices.append((al[i]._apiresource.alarm_id,name))
+            return alarms_choices
 
     # We have to protect the entire "data" dict because it contains the
     # password and confirm_password strings.
@@ -144,43 +201,59 @@ class CreateHealingActionForm(BaseActionForm):
     def handle(self, request, data):
         try:
             LOG.info('Creating a healing action.')
-            condition = data['condition'].upper()
+
+            project = ''
             if (data['project'] != 'All Projects'):
-                new_action = api.self_healing.set_action_parameters(condition=condition,
-                                                                  action=data['action'],
-                                                                  project=data['project'],
-                                                                  period=data['period'])
-                return new_action
-            else:
-                #l = range(2, self.fields['project'].choices.__len__(), 1)
-                #for i in l:
-                #    p = self.fields['project'].choices[i]
-                #    new_action = api.self_healing.set_action_parameters(condition=data['condition'],
-                #                                                  action=data['action'],
-                #                                                  project=p[0],
-                #                                                  period=data['period'])
+                project = data['project']
 
-
-                new_action = api.self_healing.set_action_parameters(condition=condition,
-                                                                  action=data['action'],
-                                                                  project='',
-                                                                  period=data['period'])
-                return new_action
+            if data['condition'].upper() == 'HOST_DOWN':
+                new_action = api.self_healing.set_action_parameters(condition=data['condition'].upper(),
+                                                                      action=data['action'],
+                                                                      project=project,
+                                                                      alarm_data=jsonutils.dumps({'period': data['host_down_configuration']})
+                                                                    )
+            elif data['condition'].upper() == 'CEILOMETER_EXTERNAL_RESOURCE':
+                new_action = api.self_healing.set_action_parameters(condition=data['condition'].upper(),
+                                                                      action=data['action'],
+                                                                      project=project,
+                                                                      resource_id=data['resource'],
+                                                                      alarm_data=jsonutils.dumps({'alarm_id': data['alarm']})
+                                                                    )
+            elif data['condition'].upper() == 'GENERIC_SCRIPT_ALARM':
+                new_action = api.self_healing.set_action_parameters(condition=data['condition'].upper(),
+                                                                      action=data['action'],
+                                                                      project=project,
+                                                                      resource_id=data['resource']
+                                                                    )
+            elif data['condition'].upper() == 'RESOURCE':
+                new_action = api.self_healing.set_action_parameters(condition=data['condition'].upper(),
+                                                                      action=data['action'],
+                                                                      project=project,
+                                                                      resource_id=data['resource'],
+                                                                      alarm_data=jsonutils.dumps({"period": 20, "threshold": "95", "operator": "gt", "meter": "disk.percentage"})
+                                                                    )
+            #for creating an alarms template {"period": 20, "threshold": "100", "operator": "gt", "meter": "disk.read.bytes"}
+            #form alarm_id {"alarm_id":"5f905ad6-c67a-4c6e-92bd-3fd179b5de42"}
+            return new_action
         except Exception:
             exceptions.handle(request, _('Unable to create healing action.'))
-
 
     def clean(self):
         cleaned_data = super(CreateHealingActionForm, self).clean()
 
         condition = cleaned_data.get('condition')
         action = cleaned_data.get("action")
+        alarm = cleaned_data.get("alarm")
+        resource = cleaned_data.get("resource")
 
-        if condition.upper() != 'HOST_DOWN':
-            msg = _('Condition not available.')
-            raise ValidationError(msg)
         if action != 'evacuate':
             msg = _('Action not available.')
+            raise ValidationError(msg)
+        if condition.upper() == 'CEILOMETER_EXTERNAL_RESOURCE' and alarm == '':
+            msg = _('Please select an alarm.')
+            raise ValidationError(msg)
+        if resource == '' and condition.upper() != 'HOST_DOWN':
+            msg = _('Please select a resource.')
             raise ValidationError(msg)
 
         return cleaned_data
