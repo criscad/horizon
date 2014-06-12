@@ -76,5 +76,5 @@ class AllAlarmsTab(tabs.TableTab):
 
 class AlarmManagementTabs(tabs.TabGroup):
     slug = "alarm_management"
-    tabs = (ActiveAlarmsTab, AllAlarmsTab)
+    tabs = (AllAlarmsTab,ActiveAlarmsTab)
     sticky = True
