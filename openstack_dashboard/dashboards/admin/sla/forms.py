@@ -242,13 +242,13 @@ class CreateHealingActionForm(BaseActionForm):
         cleaned_data = super(CreateHealingActionForm, self).clean()
 
         condition = cleaned_data.get('condition')
-        action = cleaned_data.get("action")
+        #action = cleaned_data.get("action")
         alarm = cleaned_data.get("alarm")
         resource = cleaned_data.get("resource")
 
-        if action != 'evacuate':
-            msg = _('Action not available.')
-            raise ValidationError(msg)
+        #if action != 'evacuate':
+        #    msg = _('Action not available.')
+        #    raise ValidationError(msg)
         if condition.upper() == 'CEILOMETER_EXTERNAL_RESOURCE' and alarm == '':
             msg = _('Please select an alarm.')
             raise ValidationError(msg)
