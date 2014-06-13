@@ -144,7 +144,7 @@ def get_sla_logs_details(log_id):
     ###mock###
     #return [SLALogsDetails(id='0', date='05:10:2014:15:40', action='Evacuation', details='Tried'), SLALogsDetails(id='1', date='05:10:2014:15:24', action='Evacuation', details='Retry')]
 
-    sla_logs_details = ActionManager.list()
+    sla_logs_details = ActionManager.list(request_id=log_id)
     sla_logs_details_list = []
     for c in sla_logs_details:
         a = SLALogsDetails(date = c.created_at[0:19], action = c.name, status = c.status, output = c.output, target_id = c.target_id, id = c.id)
