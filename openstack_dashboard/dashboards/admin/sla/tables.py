@@ -141,10 +141,10 @@ class SLALogsTable(tables.DataTable):
 
 class SLALogsDetailsTable(tables.DataTable):
     id = tables.Column("id", verbose_name=_('Action ID'))
-    date = tables.Column('date', verbose_name=_('Date'))
-    action = tables.Column('action', verbose_name=_('Triggered Action'))
+    date = tables.Column('created_at', verbose_name=_('Date'))
+    name = tables.Column('name', verbose_name=_('Triggered Action'))
     target_id = tables.Column('target_id', verbose_name=_('Target Resource'))
-    output = tables.Column('output', verbose_name=_('Resource Name'))
+    output = tables.Column('output', verbose_name=_('Output'))
     status = tables.Column('status', verbose_name=_('Status'))
 
 

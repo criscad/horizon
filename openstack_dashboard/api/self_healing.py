@@ -73,25 +73,5 @@ class SLALogs():
 
 
 def get_sla_logs_details(log_id):
-
     sla_logs_details = ActionManager.list(request_id=log_id)
-    sla_logs_details_list = []
-    for c in sla_logs_details:
-        a = SLALogsDetails(date = c.created_at[0:19], action = c.name, status = c.status, output = c.output, target_id = c.target_id, id = c.id)
-        sla_logs_details_list.append(a)
-    return sla_logs_details_list
-
-class SLALogsDetails():
-    date = ''
-    action =''
-    status = ''
-    output = ''
-    target_id = ''
-    id = ''
-    def __init__(self, id, date, action, status, output, target_id):
-        self.date = date
-        self.action = action
-        self.id = id
-        self.status = status
-        self.output = output
-        self.target_id = target_id
+    return sla_logs_details or []
