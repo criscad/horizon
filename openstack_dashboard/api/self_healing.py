@@ -14,9 +14,11 @@ TrackingManager = TrackingManager(aclient)
 HandlerManager = HandlerManager(aclient)
 
 
-def set_action_parameters(condition, action, project, resource_id = None, value = None, alarm_data= None):
+def set_action_parameters(condition, action, project, resource_id=None, value=None, alarm_data=None,
+                          action_options=None):
     an_sla_contract = SLAManager.create(project_id=project, type=condition, action=action,
-               alarm_data=alarm_data, resource_id=resource_id, value = value)
+                                        alarm_data=alarm_data, resource_id=resource_id, value=value,
+                                        action_options=action_options)
 
     return an_sla_contract
 

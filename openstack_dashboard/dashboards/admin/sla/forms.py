@@ -29,7 +29,6 @@ from horizon import forms
 from django.forms import widgets
 from django.core import urlresolvers
 
-
 from openstack_dashboard import api
 from openstack_dashboard.openstack.common import jsonutils
 
@@ -147,13 +146,18 @@ class CreateHealingActionForm(BaseActionForm):
 
     action = forms.ChoiceField(label=_("Action"))
 
+    action_options = forms.CharField(label=_("Action options"),
+                                     required=False,
+                                     initial='')
 
 
     def __init__(self, *args, **kwargs):
         roles = kwargs.pop('roles')
         super(CreateHealingActionForm, self).__init__(*args, **kwargs)
 
-        condition_choices = [('host_down', 'Host Down'), ('resource', 'Resource: Storage > 90%'), ('ceilometer_external_resource', 'Ceilometer Alarm'), ('generic_script_alarm', 'External Alarm')]
+        condition_choices = [('host_down', 'Host Down'), ('resource', 'Resource: Storage > 90%'), 
+                             ('ceilometer_external_resource', 'Ceilometer Alarm'), 
+                             ('generic_script_alarm', 'External Alarm')]
         self.fields['condition'].choices = condition_choices
 
         actions = api.self_healing.get_available_actions()
@@ -173,6 +177,7 @@ class CreateHealingActionForm(BaseActionForm):
             readonlyInput = forms.TextInput(attrs={'readonly': 'readonly'})
             self.fields["domain_id"].widget = readonlyInput
             self.fields["domain_name"].widget = readonlyInput
+            
 
     def _get_vm_resources(self):
             servers = api.nova.server_list(self.request,all_tenants=True)
@@ -210,28 +215,32 @@ class CreateHealingActionForm(BaseActionForm):
                 new_action = api.self_healing.set_action_parameters(condition=data['condition'].upper(),
                                                                       action=data['action'],
                                                                       project=project,
-                                                                      alarm_data=jsonutils.dumps({'period': data['host_down_configuration']})
+                                                                      alarm_data=jsonutils.dumps({'period': data['host_down_configuration']}),
+                                                                      action_options=jsonutils.dumps(data['action_options'])
                                                                     )
             elif data['condition'].upper() == 'CEILOMETER_EXTERNAL_RESOURCE':
                 new_action = api.self_healing.set_action_parameters(condition=data['condition'].upper(),
                                                                       action=data['action'],
                                                                       project=project,
                                                                       resource_id=data['resource'],
-                                                                      alarm_data=jsonutils.dumps({'alarm_id': data['alarm']})
+                                                                      alarm_data=jsonutils.dumps({'alarm_id': data['alarm']}),
+                                                                      action_options=jsonutils.dumps(data['action_options'])
                                                                     )
             elif data['condition'].upper() == 'GENERIC_SCRIPT_ALARM':
                 new_action = api.self_healing.set_action_parameters(condition=data['condition'].upper(),
                                                                       action=data['action'],
                                                                       project=project,
-                                                                      resource_id=data['resource']
+                                                                      resource_id=data['resource'],
+                                                                      action_options=jsonutils.dumps(data['action_options'])
                                                                     )
             elif data['condition'].upper() == 'RESOURCE':
                 new_action = api.self_healing.set_action_parameters(condition=data['condition'].upper(),
                                                                       action=data['action'],
                                                                       project=project,
                                                                       resource_id=data['resource'],
-                                                                      alarm_data=jsonutils.dumps({"period": 20, "threshold": "95", "operator": "gt", "meter": "disk.percentage"})
-                                                                    )
+                                                                      alarm_data=jsonutils.dumps({"period": 20, "threshold": "95", "operator": "gt", "meter": "disk.percentage"}),
+                                                                      action_options=jsonutils.dumps(data['action_options'])
+                                                                      )
             #for creating an alarms template {"period": 20, "threshold": "100", "operator": "gt", "meter": "disk.read.bytes"}
             #form alarm_id {"alarm_id":"5f905ad6-c67a-4c6e-92bd-3fd179b5de42"}
             return new_action
@@ -240,7 +249,6 @@ class CreateHealingActionForm(BaseActionForm):
 
     def clean(self):
         cleaned_data = super(CreateHealingActionForm, self).clean()
-
         condition = cleaned_data.get('condition')
         #action = cleaned_data.get("action")
         alarm = cleaned_data.get("alarm")

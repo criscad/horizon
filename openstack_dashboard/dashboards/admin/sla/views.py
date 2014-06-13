@@ -47,7 +47,7 @@ import json
 class IndexView(tabs.TabbedTableView):
     tab_group_class = project_tabs.SLATabs
     template_name = 'admin/sla/index.html'
-
+    
 
 class CreateView(forms.ModalFormView):
     form_class = project_forms.CreateHealingActionForm
