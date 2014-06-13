@@ -40,6 +40,10 @@ from openstack_dashboard.api import self_healing
 from openstack_dashboard.dashboards.admin.sla \
     import forms as project_forms
 
+from django.views.generic import View as generic_view # noqa
+from django.http import HttpResponse
+import json
+
 class IndexView(tabs.TabbedTableView):
     tab_group_class = project_tabs.SLATabs
     template_name = 'admin/sla/index.html'
@@ -89,6 +93,29 @@ class LogDetailsView(forms.ModalFormMixin, tables.DataTableView):
             exceptions.check_message(["Connection", "refused"], msg)
 
         return self.sla_logs_details
+
+class GetTenantVmsView(generic_view):
+    """
+Required to update vms per tenant on ajax select-box change
+#TODO(someone) Check if admin policy is being applied!
+ONLY WORK FOR ACTIVE VM'S. IDEALLY STACTASH SHOULD RETURN THE LIsT
+OF VM's recorded
+"""
+
+    def get(self, request, *args, **kwargs):
+        #TODO(bug?) nova api ignore tenant_id
+
+        tenant = kwargs.get('tenant_id')
+        vms = []
+        try:
+            instances, more = api.nova.server_list(request,all_tenants=True)
+            vms = dict((x.id, x.name) for x in instances
+                          if x.tenant_id == tenant)
+        except Exception:
+            exceptions.handle(request,
+                              _('Unable to retrieve vms.'))
+        return HttpResponse(json.dumps(vms), content_type='text/json')
+
 
     #def dispatch(self, *args, **kwargs):
     #    return super(LogDetailsView, self).dispatch(*args, **kwargs)

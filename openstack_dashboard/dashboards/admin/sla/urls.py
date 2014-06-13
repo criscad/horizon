@@ -28,4 +28,5 @@ urlpatterns = patterns('openstack_dashboard.dashboards.admin.sla.views',
     url(r'^$', views.IndexView.as_view(), name='index'),
     url(r'^create/$', views.CreateView.as_view(), name='create'),
     url(r'^actiondetails/(?P<id>[^/]+)/$', views.LogDetailsView.as_view(), name='actiondetails'),
-    url(r'^actiondetails/$', views.LogDetailsView.as_view(), name='actiondetails'))
+    url(r'^actiondetails/$', views.LogDetailsView.as_view(), name='actiondetails'),
+    url(r'^tenant_vms/(?P<tenant_id>[^/]+)$', views.GetTenantVmsView.as_view(), name='tenant_vms'))
