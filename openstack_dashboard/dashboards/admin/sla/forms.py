@@ -100,6 +100,9 @@ class CreateHealingActionForm(BaseActionForm):
                                   required=False,
                                   widget=forms.HiddenInput())
 
+    name = forms.CharField(label=_("Contract Name"),
+                                  required=True)
+
     project = forms.DynamicChoiceField(label=_("Project"),
                                        add_item_link=ADD_PROJECT_URL)
 
@@ -216,7 +219,8 @@ class CreateHealingActionForm(BaseActionForm):
                                                                       action=data['action'],
                                                                       project=project,
                                                                       alarm_data=jsonutils.dumps({'period': data['host_down_configuration']}),
-                                                                      action_options=jsonutils.dumps(data['action_options'])
+                                                                      action_options=jsonutils.dumps(data['action_options']),
+                                                                      name=data['name']
                                                                     )
             elif data['condition'].upper() == 'CEILOMETER_EXTERNAL_RESOURCE':
                 new_action = api.self_healing.set_action_parameters(condition=data['condition'].upper(),
@@ -224,14 +228,16 @@ class CreateHealingActionForm(BaseActionForm):
                                                                       project=project,
                                                                       resource_id=data['resource'],
                                                                       alarm_data=jsonutils.dumps({'alarm_id': data['alarm']}),
-                                                                      action_options=jsonutils.dumps(data['action_options'])
+                                                                      action_options=jsonutils.dumps(data['action_options']),
+                                                                      name=data['name']
                                                                     )
             elif data['condition'].upper() == 'GENERIC_SCRIPT_ALARM':
                 new_action = api.self_healing.set_action_parameters(condition=data['condition'].upper(),
                                                                       action=data['action'],
                                                                       project=project,
                                                                       resource_id=data['resource'],
-                                                                      action_options=jsonutils.dumps(data['action_options'])
+                                                                      action_options=jsonutils.dumps(data['action_options']),
+                                                                      name=data['name']
                                                                     )
             elif data['condition'].upper() == 'RESOURCE':
                 new_action = api.self_healing.set_action_parameters(condition=data['condition'].upper(),
@@ -239,7 +245,8 @@ class CreateHealingActionForm(BaseActionForm):
                                                                       project=project,
                                                                       resource_id=data['resource'],
                                                                       alarm_data=jsonutils.dumps({"period": 20, "threshold": "95", "operator": "gt", "meter": "disk.percentage"}),
-                                                                      action_options=jsonutils.dumps(data['action_options'])
+                                                                      action_options=jsonutils.dumps(data['action_options']),
+                                                                      name=data['name']
                                                                       )
             #for creating an alarms template {"period": 20, "threshold": "100", "operator": "gt", "meter": "disk.read.bytes"}
             #form alarm_id {"alarm_id":"5f905ad6-c67a-4c6e-92bd-3fd179b5de42"}

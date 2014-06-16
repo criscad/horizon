@@ -14,7 +14,7 @@ TrackingManager = TrackingManager(aclient)
 HandlerManager = HandlerManager(aclient)
 
 import json
-def set_action_parameters(condition, action, project, resource_id=None, value=None, alarm_data=None,
+def set_action_parameters(condition, action, project, name, resource_id=None, value=None, alarm_data=None,
                           action_options=None):
     if action_options:
         try:
@@ -22,7 +22,7 @@ def set_action_parameters(condition, action, project, resource_id=None, value=No
         except:
             action_options = None
             
-    an_sla_contract = SLAManager.create(project_id=project, type=condition, action=action,
+    an_sla_contract = SLAManager.create(name=name, project_id=project, type=condition, action=action,
                                         alarm_data=alarm_data, resource_id=resource_id, value=value,
                                         action_options=action_options)
 
@@ -43,6 +43,7 @@ def get_action_parameters():
         a.project = c.project_id
         #a.period = '60' #c.alarm_data['period']
         a.id = c.id
+        a.name = c.name
         actions_list.append(a)
     return actions_list
 
@@ -52,6 +53,7 @@ class HealingAction():
     project = ''
     period =''
     id = ''
+    name =''
 
 
 def get_available_actions():
@@ -64,20 +66,22 @@ def get_sla_logs():
     sla_logs = TrackingManager.list()
     sla_logs_list = []
     for c in sla_logs:
-        a = SLALogs(date = c.time[0:19], resources = c.data, alarm = c.alarm_id, id = c.id)
+        a = SLALogs(date = c.time[0:19], resources = c.data, alarm = c.alarm_id, id = c.id, contract_name = c.contract_name)
         sla_logs_list.append(a)
     return sla_logs_list
 
 class SLALogs():
-    date = '1/1/1'
-    resources ='host1'
-    alarm = 'Host Down'
+    date = ''
+    resources =''
+    alarm = ''
+    contract_name = ''
     id = 1
-    def __init__(self, id, date, resources, alarm):
+    def __init__(self, id, date, resources, alarm, contract_name):
         self.date = date
         self.resources = resources
         self.id = id
         self.alarm = alarm
+        self.contract_name = contract_name
 
 
 def get_sla_logs_details(log_id):
