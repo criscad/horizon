@@ -26,6 +26,7 @@ from django.views.decorators.debug import sensitive_variables  # noqa
 
 from horizon import exceptions
 from horizon import forms
+from horizon.forms import fields as horizon_fields
 from django.forms import widgets
 from django.core import urlresolvers
 
@@ -72,25 +73,6 @@ ADD_PROJECT_URL = "horizon:admin:projects:create"
 ADD_ALARM_URL = "horizon:admin:alarms:create"
 
 
-class DynamicSelectWidget(widgets.Select):
-    """A subclass of the ``Select`` widget which renders extra attributes for use in callbacks to handle dynamic changes to the available choices. """
-    _data_add_url_attr = "data-add-item-url"
-
-    def render(self, *args, **kwargs):
-        add_item_url = self.get_add_item_url()
-        if add_item_url is not None:
-            self.attrs.update({self._data_add_url_attr: add_item_url})
-            return super(DynamicSelectWidget, self).render(*args, **kwargs)
-    def get_add_item_url(self):
-        if callable(self.add_item_link):
-            return self.add_item_link()
-        try:
-            if self.add_item_link_args:
-                return urlresolvers.reverse(self.add_item_link, args=self.add_item_link_args)
-            else: return urlresolvers.reverse(self.add_item_link)
-        except urlresolvers.NoReverseMatch:
-            return self.add_item_link
-
 class CreateHealingActionForm(BaseActionForm):
     # Hide the domain_id and domain_name by default
     domain_id = forms.CharField(label=_("Domain ID"),
@@ -116,7 +98,7 @@ class CreateHealingActionForm(BaseActionForm):
     alarm = forms.DynamicChoiceField(label=_("Ceilometer Alarms"),
                                   required=False,
                                   initial='',
-        widget=DynamicSelectWidget(attrs={
+        widget=horizon_fields.DynamicSelectWidget(attrs={
             'class': 'switched',
             'data-switch-on': 'anaction',
             'data-anaction-ceilometer_external_resource': _("Ceilometer Alarms"),

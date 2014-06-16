@@ -120,7 +120,7 @@ class SLALogs(tabs.TableTab):
             if sla_logs:
               log_count = self.request.session.get('sla_log_count', len(sla_logs))
               if int(log_count) > len(sla_logs):
-                  messages.warning(self.request, "New Tracking LOG")
+                  messages.warning(self.request, "New Alarm Track!")
             self.request.session['sla_log_count'] = len(sla_logs)
         except Exception:
             msg = _('Unable to get sla action logs status.')

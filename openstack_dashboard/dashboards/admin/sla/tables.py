@@ -20,7 +20,9 @@ from horizon.utils import filters as utils_filters
 from openstack_dashboard import api
 from openstack_dashboard.dashboards.project.instances \
     import tables as project_tables
-    
+
+from openstack_dashboard.openstack.common \
+    import jsonutils
 #class NovaServiceFilterAction(tables.FilterAction):
 #    def fi
 #       def comp(service):
@@ -125,12 +127,25 @@ class HostResourcesTable(tables.DataTable):
         verbose_name = _("Host Resources Status")
         table_actions = ()
 
+def get_contract_names(track):
+    if not track.contract_names:
+        return "-"
+    try:
+        affected = jsonutils.loads(track.contract_names)
+    except Exception:
+        return "-"
+    return ["%s [%s]" % (x.get('id'),x.get('name'))
+            for x in affected]
+    
+    #return "\n\n".join(["%s(%s)" % (x.get('id'),x.get('name'))
+    #        for x in affected])
+        
 class SLALogsTable(tables.DataTable):
     id = tables.Column("id", verbose_name=_('Tracking ID'))
-    date = tables.Column('date', verbose_name=_('Date'))
-    contract_name = tables.Column('contract_name', verbose_name=_('Associated Contract'))
-    alarm = tables.Column('alarm', verbose_name=_('Triggered Alarm'))
-    resources = tables.Column('resources', verbose_name=_('Associated Resources'))
+    date = tables.Column("created_at", verbose_name=_('Date'))
+    contract_name = tables.Column(get_contract_names, verbose_name=_('Associated Contract'))
+    alarm = tables.Column('alarm_id', verbose_name=_('Triggered Alarm'))
+    resources = tables.Column('data', verbose_name=_('Associated Resources'))
 
     def get_object_id(self, obj):
         return "%s" % (obj.id)
