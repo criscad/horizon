@@ -128,6 +128,7 @@ class HostResourcesTable(tables.DataTable):
 class SLALogsTable(tables.DataTable):
     id = tables.Column("id", verbose_name=_('Tracking ID'))
     date = tables.Column('date', verbose_name=_('Date'))
+    contract_name = tables.Column('contract_name', verbose_name=_('Associated Contract'))
     alarm = tables.Column('alarm', verbose_name=_('Triggered Alarm'))
     resources = tables.Column('resources', verbose_name=_('Associated Resources'))
 

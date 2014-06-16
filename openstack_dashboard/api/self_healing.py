@@ -66,20 +66,22 @@ def get_sla_logs():
     sla_logs = TrackingManager.list()
     sla_logs_list = []
     for c in sla_logs:
-        a = SLALogs(date = c.time[0:19], resources = c.data, alarm = c.alarm_id, id = c.id)
+        a = SLALogs(date = c.time[0:19], resources = c.data, alarm = c.alarm_id, id = c.id, contract_name = c.contract_name)
         sla_logs_list.append(a)
     return sla_logs_list
 
 class SLALogs():
-    date = '1/1/1'
-    resources ='host1'
-    alarm = 'Host Down'
+    date = ''
+    resources =''
+    alarm = ''
+    contract_name = ''
     id = 1
-    def __init__(self, id, date, resources, alarm):
+    def __init__(self, id, date, resources, alarm, contract_name):
         self.date = date
         self.resources = resources
         self.id = id
         self.alarm = alarm
+        self.contract_name = contract_name
 
 
 def get_sla_logs_details(log_id):
