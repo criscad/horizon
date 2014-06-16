@@ -28,7 +28,7 @@ from openstack_dashboard.api import keystone
 
 class SLATab(tabs.TableTab):
     table_classes = (tables.HealingActionsTable,)
-    name = _("SLA")
+    name = _("Contracts")
     slug = "sla"
     template_name = ("horizon/common/_detail_table.html")
 
@@ -109,7 +109,7 @@ class SLAHostResourcesTab(tabs.TableTab):
 
 class SLALogs(tabs.TableTab):
     table_classes = (tables.SLALogsTable,)
-    name = _("SLA Actions Logs")
+    name = _("Contract Logs")
     slug = "slaactionlogs"
     template_name = ("horizon/common/_detail_table.html")
 

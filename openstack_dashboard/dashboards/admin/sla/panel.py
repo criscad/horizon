@@ -26,7 +26,7 @@ from openstack_dashboard.dashboards.admin import dashboard
 
 
 class SLA(horizon.Panel):
-    name = _("SLA Management")
+    name = _("Contracts Management")
     slug = 'sla'
 
 

@@ -64,7 +64,7 @@ class DeleteHealingActionsAction(tables.DeleteAction):
 
 class SLALogsDetailsAction(tables.LinkAction):
     name = "actiondetails"
-    verbose_name = _("SLA Action Details")
+    verbose_name = _("Contract Actions Details")
     #url = "horizon:admin:sla:action_details"
     url = "horizon:admin:sla:actiondetails"
     classes = ("ajax-modal", "btn-create")
@@ -152,7 +152,7 @@ class SLALogsTable(tables.DataTable):
 
     class Meta:
         name = "sla_logs"
-        verbose_name = _("SLA Tracking Logs")
+        verbose_name = _("Contracts Tracking Logs")
         table_actions = ()
         row_actions = (SLALogsDetailsAction,)
 
@@ -170,6 +170,6 @@ class SLALogsDetailsTable(tables.DataTable):
 
     class Meta:
         name = "sla_logs_details"
-        verbose_name = _("SLA Actions Logs Details")
+        verbose_name = _("Contracts Actions Logs")
         table_actions = ()
         row_actions = ()
