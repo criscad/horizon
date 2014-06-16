@@ -77,6 +77,7 @@ class SLALogsDetailsAction(tables.LinkAction):
 
 class HealingActionsTable(tables.DataTable):
     id = tables.Column("id", verbose_name=_('ID'))
+    name = tables.Column('name', verbose_name=_('Name'))
     project = tables.Column("project", verbose_name=_('Project'))
     condition = tables.Column('condition', verbose_name=_('Condition'))
     action = tables.Column('action', verbose_name=_('Action'))

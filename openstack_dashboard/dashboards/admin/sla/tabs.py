@@ -32,9 +32,9 @@ class SLATab(tabs.TableTab):
     template_name = ("horizon/common/_detail_table.html")
 
     def get_healing_actions_data(self):
+        action_parameters = []
         try:
             projects, more = keystone.tenant_list(self.request)
-            action_parameters = []
             action_parameters = self_healing.get_action_parameters()
             #acts = self_healing.get_action_parameters()
             #action_parameters = self._copy(acts)
@@ -45,11 +45,11 @@ class SLATab(tabs.TableTab):
                 elif action.project != 'All Projects':
                     action.project = self._get_tenant_name(action.project, projects)
 
-            return action_parameters
-
         except Exception:
             msg = _('Unable to get self_healing action params.')
             exceptions.check_message(["Connection", "refused"], msg)
+
+        return action_parameters
 
     def _get_tenant_name(self, tenant_id, projects):
         for p in projects:
@@ -125,5 +125,5 @@ class SLALogs(tabs.TableTab):
 
 class SLATabs(tabs.TabGroup):
     slug = "slas"
-    tabs = (SLATab,SLAHostResourcesTab, SLAVMResourcesTab, SLALogs,)
+    tabs = (SLATab, SLAHostResourcesTab, SLAVMResourcesTab, SLALogs)
     sticky = True

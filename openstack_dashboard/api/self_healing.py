@@ -14,7 +14,7 @@ TrackingManager = TrackingManager(aclient)
 HandlerManager = HandlerManager(aclient)
 
 import json
-def set_action_parameters(condition, action, project, resource_id=None, value=None, alarm_data=None,
+def set_action_parameters(condition, action, project, name, resource_id=None, value=None, alarm_data=None,
                           action_options=None):
     if action_options:
         try:
@@ -22,7 +22,7 @@ def set_action_parameters(condition, action, project, resource_id=None, value=No
         except:
             action_options = None
             
-    an_sla_contract = SLAManager.create(project_id=project, type=condition, action=action,
+    an_sla_contract = SLAManager.create(name=name, project_id=project, type=condition, action=action,
                                         alarm_data=alarm_data, resource_id=resource_id, value=value,
                                         action_options=action_options)
 
@@ -43,6 +43,7 @@ def get_action_parameters():
         a.project = c.project_id
         #a.period = '60' #c.alarm_data['period']
         a.id = c.id
+        a.name = c.name
         actions_list.append(a)
     return actions_list
 
@@ -52,6 +53,7 @@ class HealingAction():
     project = ''
     period =''
     id = ''
+    name =''
 
 
 def get_available_actions():
