@@ -17,6 +17,7 @@
 from django.utils.translation import ugettext_lazy as _
 
 from horizon import exceptions
+from horizon import messages
 from horizon import tabs
 
 from openstack_dashboard.dashboards.admin.sla import tables
@@ -111,16 +112,21 @@ class SLALogs(tabs.TableTab):
     name = _("SLA Actions Logs")
     slug = "slaactionlogs"
     template_name = ("horizon/common/_detail_table.html")
-    sla_logs = []
 
     def get_sla_logs_data(self):
+        sla_logs = []
         try:
-            self.sla_logs = self_healing.get_sla_logs()
+            sla_logs = self_healing.get_sla_logs()
+            if sla_logs:
+              log_count = self.request.session.get('sla_log_count', len(sla_logs))
+              if int(log_count) > len(sla_logs):
+                  messages.warning(self.request, "New Tracking LOG")
+            self.request.session['sla_log_count'] = len(sla_logs)
         except Exception:
             msg = _('Unable to get sla action logs status.')
             exceptions.check_message(["Connection", "refused"], msg)
 
-        return self.sla_logs
+        return sla_logs
 
 
 class SLATabs(tabs.TabGroup):
