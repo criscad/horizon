@@ -153,7 +153,7 @@ class CreateHealingActionForm(BaseActionForm):
                              ('notification_alarm', 'Notification Alarm')]
         self.fields['condition'].choices = condition_choices
 
-        self.fields['notification'].choices = [('compute.instance.created.end',
+        self.fields['notification'].choices = [('compute.instance.create.end',
                                                _('Instance Launched'))]
 
         actions = api.self_healing.get_available_actions()
