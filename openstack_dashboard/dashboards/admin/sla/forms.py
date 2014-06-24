@@ -95,6 +95,9 @@ class CreateHealingActionForm(BaseActionForm):
                                   })
                                   )
 
+    notification = forms.ChoiceField(label=_("Notification Type"),
+                                     required=False)
+
     alarm = forms.DynamicChoiceField(label=_("Ceilometer Alarms"),
                                   required=False,
                                   initial='',
@@ -125,11 +128,13 @@ class CreateHealingActionForm(BaseActionForm):
             'data-switch-on': 'anaction',
             'data-anaction-resource': _("Resource"),
             'data-anaction-ceilometer_external_resource': _("Resource"),
-            'data-anaction-generic_script_alarm': _("Resource")
+            'data-anaction-generic_script_alarm': _("Resource"),
+            'data-anaction-notification_alarm': _("Resource"),
         })
         )
 
     action = forms.ChoiceField(label=_("Action"))
+
 
     action_options = forms.CharField(label=_("Action options"),
                                      required=False,
@@ -140,10 +145,16 @@ class CreateHealingActionForm(BaseActionForm):
         roles = kwargs.pop('roles')
         super(CreateHealingActionForm, self).__init__(*args, **kwargs)
 
-        condition_choices = [('host_down', 'Host Down'), ('resource', 'Resource: Storage > 90%'), 
+        condition_choices = [('host_down', 'Host Down'),
+                             ('resource', 'Resource: Storage > 90%'),
                              ('ceilometer_external_resource', 'Ceilometer Alarm'), 
-                             ('generic_script_alarm', 'External Alarm')]
+                             ('generic_script_alarm', 'External Alarm'),
+                             # superseed by ceilometer sooner or later.
+                             ('notification_alarm', 'Notification Alarm')]
         self.fields['condition'].choices = condition_choices
+
+        self.fields['notification'].choices = [('compute.instance.created.end',
+                                               _('Instance Launched'))]
 
         actions = api.self_healing.get_available_actions()
         action_choices = [] #[('evacuate', 'Evacuate all Host VMs'), ('reboot', 'Restart All VMs'), ('migrate', 'Migrate All VMs')]
@@ -162,7 +173,6 @@ class CreateHealingActionForm(BaseActionForm):
             readonlyInput = forms.TextInput(attrs={'readonly': 'readonly'})
             self.fields["domain_id"].widget = readonlyInput
             self.fields["domain_name"].widget = readonlyInput
-            
 
     def _get_vm_resources(self):
             servers = api.nova.server_list(self.request,all_tenants=True)
@@ -170,7 +180,8 @@ class CreateHealingActionForm(BaseActionForm):
             if servers and servers[0]:
                 r = range(0, servers[0].__len__(), 1)
                 for i in r:
-                    vm_resources.append((servers[0][i]._apiresource.id,servers[0][i]._apiresource.human_id))
+                    vm_resources.append((servers[0][i]._apiresource.id,
+                                         servers[0][i]._apiresource.human_id))
             return vm_resources
 
     def _get_alarms(self):
@@ -230,6 +241,15 @@ class CreateHealingActionForm(BaseActionForm):
                                                                       action_options=jsonutils.dumps(data['action_options']),
                                                                       name=data['name']
                                                                       )
+            elif data['condition'].upper() == 'NOTIFICATION_ALARM':
+                new_action = api.self_healing.set_action_parameters(condition=data['condition'].upper(),
+                                                                      action=data['action'],
+                                                                      project=project,
+                                                                      resource_id=data['resource'],
+                                                                      alarm_data=jsonutils.dumps({"meter": data['notification']}),
+                                                                      action_options=jsonutils.dumps(data['action_options']),
+                                                                      name=data['name']
+                                                                      )
             #for creating an alarms template {"period": 20, "threshold": "100", "operator": "gt", "meter": "disk.read.bytes"}
             #form alarm_id {"alarm_id":"5f905ad6-c67a-4c6e-92bd-3fd179b5de42"}
             return new_action
@@ -249,7 +269,8 @@ class CreateHealingActionForm(BaseActionForm):
         if condition.upper() == 'CEILOMETER_EXTERNAL_RESOURCE' and alarm == '':
             msg = _('Please select an alarm.')
             raise ValidationError(msg)
-        if resource == '' and condition.upper() != 'HOST_DOWN':
+        if resource == '' and condition.upper() not in ['HOST_DOWN',
+                                                        'NOTIFICATION_ALARM']:
             msg = _('Please select a resource.')
             raise ValidationError(msg)
 

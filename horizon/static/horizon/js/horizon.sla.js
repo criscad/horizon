@@ -69,5 +69,12 @@ horizon.addInitFunction(function () {
      update_tenant_change(this);
    });
 
+   $(document).on('change', '#id_condition', function (evt) {
+       type_notif = $($("#id_notification").parents('.control-group')[0])
+       type_notif.hide();
+       if( this.value == 'notification_alarm') {
+            type_notif.show();
+        }
+   });
   horizon.forms.datepicker();
 });
