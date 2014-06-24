@@ -106,13 +106,14 @@ class CreateHealingActionForm(BaseActionForm):
         add_item_link=ADD_ALARM_URL
         )
 
-    host_down_configuration = forms.CharField(label=_("Host Down configuration"),
+    period_configuration = forms.CharField(label=_("Time Period configuration"),
                                required=False,
                                initial='60',
         widget=forms.TextInput(attrs={
             'class': 'switched',
             'data-switch-on': 'anaction',
             'data-anaction-host_down': _("Period (seconds)"),
+            'data-anaction-vm_error': _("Period (seconds)"),
             'readonly': 'readonly'
         })
         )
@@ -140,7 +141,8 @@ class CreateHealingActionForm(BaseActionForm):
         roles = kwargs.pop('roles')
         super(CreateHealingActionForm, self).__init__(*args, **kwargs)
 
-        condition_choices = [('host_down', 'Host Down'), ('resource', 'Resource: Storage > 90%'), 
+        condition_choices = [('host_down', 'Host Down'), ('vm_error', 'Vm Error'),
+                             ('resource', 'Resource: Storage > 90%'),
                              ('ceilometer_external_resource', 'Ceilometer Alarm'), 
                              ('generic_script_alarm', 'External Alarm')]
         self.fields['condition'].choices = condition_choices
@@ -170,7 +172,7 @@ class CreateHealingActionForm(BaseActionForm):
             if servers and servers[0]:
                 r = range(0, servers[0].__len__(), 1)
                 for i in r:
-                    vm_resources.append((servers[0][i]._apiresource.id,servers[0][i]._apiresource.human_id))
+                    vm_resources.append((servers[0][i]._apiresource.id, servers[0][i]._apiresource.human_id))
             return vm_resources
 
     def _get_alarms(self):
@@ -200,7 +202,15 @@ class CreateHealingActionForm(BaseActionForm):
                 new_action = api.self_healing.set_action_parameters(condition=data['condition'].upper(),
                                                                       action=data['action'],
                                                                       project=project,
-                                                                      alarm_data=jsonutils.dumps({'period': data['host_down_configuration']}),
+                                                                      alarm_data=jsonutils.dumps({'period': data['period_configuration']}),
+                                                                      action_options=jsonutils.dumps(data['action_options']),
+                                                                      name=data['name']
+                                                                    )
+            elif data['condition'].upper() == 'VM_ERROR':
+                new_action = api.self_healing.set_action_parameters(condition=data['condition'].upper(),
+                                                                      action=data['action'],
+                                                                      project=project,
+                                                                      alarm_data=jsonutils.dumps({'period': data['period_configuration']}),
                                                                       action_options=jsonutils.dumps(data['action_options']),
                                                                       name=data['name']
                                                                     )
@@ -249,7 +259,7 @@ class CreateHealingActionForm(BaseActionForm):
         if condition.upper() == 'CEILOMETER_EXTERNAL_RESOURCE' and alarm == '':
             msg = _('Please select an alarm.')
             raise ValidationError(msg)
-        if resource == '' and condition.upper() != 'HOST_DOWN':
+        if resource == '' and condition.upper() not in ['HOST_DOWN', 'VM_ERROR']:
             msg = _('Please select a resource.')
             raise ValidationError(msg)
 
