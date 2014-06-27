@@ -95,6 +95,16 @@ class CreateHealingActionForm(BaseActionForm):
                                   })
                                   )
 
+    slo = forms.DynamicChoiceField(label=_("SLOs"),
+                                  required=False,
+                                  initial='',
+        widget=horizon_fields.DynamicSelectWidget(attrs={
+            'class': 'switched',
+            'data-switch-on': 'anaction',
+            'data-anaction-sla': _("SLOs"),
+        })
+        )
+
     alarm = forms.DynamicChoiceField(label=_("Ceilometer Alarms"),
                                   required=False,
                                   initial='',
@@ -125,7 +135,8 @@ class CreateHealingActionForm(BaseActionForm):
             'data-switch-on': 'anaction',
             'data-anaction-resource': _("Resource"),
             'data-anaction-ceilometer_external_resource': _("Resource"),
-            'data-anaction-generic_script_alarm': _("Resource")
+            'data-anaction-generic_script_alarm': _("Resource"),
+            'data-anaction-sla': _("Resource")
         })
         )
 
@@ -142,8 +153,13 @@ class CreateHealingActionForm(BaseActionForm):
 
         condition_choices = [('host_down', 'Host Down'), ('resource', 'Resource: Storage > 90%'), 
                              ('ceilometer_external_resource', 'Ceilometer Alarm'), 
-                             ('generic_script_alarm', 'External Alarm')]
+                             ('generic_script_alarm', 'External Alarm'),
+                             ('sla', 'SLA')]
         self.fields['condition'].choices = condition_choices
+
+        slo_choices = [('availability', 'VM Availability > 90% / hr'),
+                             ('max_downtime', 'VM Max Downtime < 90 sec')]
+        self.fields['slo'].choices = slo_choices
 
         actions = api.self_healing.get_available_actions()
         action_choices = [] #[('evacuate', 'Evacuate all Host VMs'), ('reboot', 'Restart All VMs'), ('migrate', 'Migrate All VMs')]
@@ -229,6 +245,15 @@ class CreateHealingActionForm(BaseActionForm):
                                                                       alarm_data=jsonutils.dumps({"period": 20, "threshold": "95", "operator": "gt", "meter": "disk.percentage"}),
                                                                       action_options=jsonutils.dumps(data['action_options']),
                                                                       name=data['name']
+                                                                      )
+            elif data['condition'].upper() == 'SLA':
+                new_action = api.self_healing.set_action_parameters(condition=data['slo'].upper(),
+                                                                      action=data['action'],
+                                                                      project=project,
+                                                                      resource_id=data['resource'],
+                                                                      action_options=jsonutils.dumps(data['action_options']),
+                                                                      name=data['name'],
+                                                                      value='90'
                                                                       )
             #for creating an alarms template {"period": 20, "threshold": "100", "operator": "gt", "meter": "disk.read.bytes"}
             #form alarm_id {"alarm_id":"5f905ad6-c67a-4c6e-92bd-3fd179b5de42"}

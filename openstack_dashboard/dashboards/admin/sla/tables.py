@@ -173,3 +173,17 @@ class SLALogsDetailsTable(tables.DataTable):
         verbose_name = _("Contracts Actions Logs")
         table_actions = ()
         row_actions = ()
+
+class SLAMetricsTable(tables.DataTable):
+    typr = tables.Column("type", verbose_name=_('Metric/SLI'))
+    value = tables.Column('value', verbose_name=_('Value'))
+
+
+    def get_object_id(self, obj):
+        return "%s" % (obj.type)
+
+    class Meta:
+        name = "sla_metrics"
+        verbose_name = _("SLA Metrics")
+        table_actions = ()
+        row_actions = ()

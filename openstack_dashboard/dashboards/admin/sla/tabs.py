@@ -25,6 +25,9 @@ from openstack_dashboard.dashboards.admin.sla import tables
 from openstack_dashboard.api import self_healing
 from openstack_dashboard.api import nova
 from openstack_dashboard.api import keystone
+from openstack_dashboard.api import ceilometer
+
+from datetime import datetime
 
 class SLATab(tabs.TableTab):
     table_classes = (tables.HealingActionsTable,)
@@ -129,7 +132,23 @@ class SLALogs(tabs.TableTab):
         return sla_logs
 
 
+class SLAMetrics(tabs.TableTab):
+    table_classes = (tables.SLAMetricsTable,)
+    name = _("SLA Metrics")
+    slug = "sla_metrics"
+    template_name = ("horizon/common/_detail_table.html")
+
+    def get_sla_metrics_data(self):
+        sla_metrics = []
+        try:
+            sla_metrics = self_healing.get_sla_statistics(stat_type='availability', project_id='5aa99ebfe0ac4de3be0f88fda0312ab4', from_date=datetime(2014,6,6), to_date=datetime.utcnow(),resource_id='01c5434a-ee84-45a2-a760-53b6482db76e')
+        except Exception:
+            msg = _('Unable to get sla metrics.')
+            exceptions.check_message(["Connection", "refused"], msg)
+
+        return sla_metrics
+
 class SLATabs(tabs.TabGroup):
     slug = "slas"
-    tabs = (SLATab, SLAHostResourcesTab, SLAVMResourcesTab, SLALogs)
+    tabs = (SLATab, SLAHostResourcesTab, SLAVMResourcesTab, SLALogs, SLAMetrics)
     sticky = True

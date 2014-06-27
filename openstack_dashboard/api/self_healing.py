@@ -5,6 +5,7 @@ from healingclient.api.slacontract import SLAContractManager
 from healingclient.api.tracking import TrackingManager
 from healingclient.api.actions import ActionManager
 from healingclient.api.handlers import HandlerManager
+from healingclient.api.slastatistics import SLAStatisticsManager
 
 
 aclient = client.Client()
@@ -12,6 +13,7 @@ SLAManager = SLAContractManager(aclient)
 ActionManager = ActionManager(aclient)
 TrackingManager = TrackingManager(aclient)
 HandlerManager = HandlerManager(aclient)
+SLAStatisticsManager = SLAStatisticsManager(aclient)
 
 import json
 def set_action_parameters(condition, action, project, name, resource_id=None, value=None, alarm_data=None,
@@ -69,3 +71,10 @@ def get_sla_logs():
 def get_sla_logs_details(log_id):
     sla_logs_details = ActionManager.list(request_id=log_id)
     return sla_logs_details or []
+
+
+def get_sla_statistics(stat_type, project_id, from_date, to_date,
+            resource_id=None):
+    sla_statistics = [(SLAStatisticsManager.get(stat_type=stat_type, project_id=project_id,
+                                              from_date=from_date, to_date=to_date, resource_id=resource_id))]
+    return sla_statistics or []
