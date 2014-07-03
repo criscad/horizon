@@ -141,12 +141,24 @@ class SLAMetrics(tabs.TableTab):
     def get_sla_metrics_data(self):
         sla_metrics = []
         try:
-            sla_metrics = self_healing.get_sla_statistics(stat_type='availability', project_id='5aa99ebfe0ac4de3be0f88fda0312ab4', from_date=datetime(2014,6,6), to_date=datetime.utcnow(),resource_id='01c5434a-ee84-45a2-a760-53b6482db76e')
+            projects, more = keystone.tenant_list(self.request)
+
+            for p in projects:
+                if p.enabled and p.id:
+                    sla_metric = self_healing.get_sla_statistics(stat_type='availability', project_id=p.id, from_date=datetime(2014,6,6), to_date=datetime.utcnow(),resource_id='01c5434a-ee84-45a2-a760-53b6482db76e')
+                    sla_metric.project = self._get_tenant_name(p.id, projects)
+                    sla_metrics.append(sla_metric)
         except Exception:
             msg = _('Unable to get sla metrics.')
             exceptions.check_message(["Connection", "refused"], msg)
 
         return sla_metrics
+
+    def _get_tenant_name(self, tenant_id, projects):
+        for p in projects:
+            if p.enabled and p.id==tenant_id:
+                return p.name
+        return ''
 
 class SLATabs(tabs.TabGroup):
     slug = "slas"

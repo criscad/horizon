@@ -75,6 +75,6 @@ def get_sla_logs_details(log_id):
 
 def get_sla_statistics(stat_type, project_id, from_date, to_date,
             resource_id=None):
-    sla_statistics = [(SLAStatisticsManager.get(stat_type=stat_type, project_id=project_id,
-                                              from_date=from_date, to_date=to_date, resource_id=resource_id))]
+    sla_statistics = (SLAStatisticsManager.get(stat_type=stat_type, project_id=project_id,
+                                              from_date=from_date, to_date=to_date, resource_id=resource_id))
     return sla_statistics or []
