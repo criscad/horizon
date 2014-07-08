@@ -145,9 +145,19 @@ class SLAMetrics(tabs.TableTab):
 
             for p in projects:
                 if p.enabled and p.id:
-                    sla_metric = self_healing.get_sla_statistics(stat_type='availability', project_id=p.id, from_date=datetime(2014,6,6), to_date=datetime.utcnow(),resource_id='01c5434a-ee84-45a2-a760-53b6482db76e')
-                    sla_metric.project = self._get_tenant_name(p.id, projects)
+                    sla_metric = self_healing.get_sla_statistics(stat_type='availability', project_id=p.id, from_date=datetime(2014,6,6), to_date=datetime.utcnow(), resource_id='01c5434a-ee84-45a2-a760-53b6482db76e')
+                    sla_metric.resource = self._get_tenant_name(p.id, projects)
                     sla_metrics.append(sla_metric)
+
+            #servers = nova.server_list(self.request, search_opts={'project_id': p.id}) #all_tenants=True)
+            servers = nova.server_list(self.request, all_tenants=True)
+
+            for s in servers[0]:
+
+                    sla_metric = self_healing.get_sla_statistics(stat_type='availability', project_id=s._apiresource.tenant_id, from_date=datetime(2014,6,6), to_date=datetime.utcnow(),resource_id=s._apiresource.id)
+                    sla_metric.resource = s._apiresource.human_id
+                    sla_metrics.append(sla_metric)
+
         except Exception:
             msg = _('Unable to get sla metrics.')
             exceptions.check_message(["Connection", "refused"], msg)

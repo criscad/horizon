@@ -167,7 +167,7 @@ class CreateHealingActionForm(BaseActionForm):
         self.fields['condition'].choices = condition_choices
 
         slo_choices = [('availability', 'VM Availability > 90% / hr'),
-                             ('max_downtime', 'VM Max Downtime < 90 sec')]
+                             ('max_vm_downtime', 'VM Max Downtime < 90 sec')]
         self.fields['slo'].choices = slo_choices
 
         self.fields['condition'].choices = condition_choices
